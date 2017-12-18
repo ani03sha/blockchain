@@ -6,12 +6,15 @@ package org.anirudh.redquark.blockchain.controller;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.anirudh.redquark.blockchain.domain.BlockChain;
 import org.anirudh.redquark.blockchain.dto.BlockChainResponseDTO;
 import org.anirudh.redquark.blockchain.model.Block;
 import org.anirudh.redquark.blockchain.model.Transaction;
+import org.anirudh.redquark.blockchain.repository.BlockRepository;
+import org.anirudh.redquark.blockchain.repository.TransactionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -31,6 +34,12 @@ public class BlockChainController {
 
 	@Autowired
 	private BlockChain blockChain;
+	
+	@Autowired
+	private BlockRepository blockRepository;
+	
+	@Autowired
+	private TransactionRepository transactionRepository;
 
 	@Value("${blockchain.node.id}")
 	private String blockChainNodeId;
@@ -39,7 +48,7 @@ public class BlockChainController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public Map<String, String> createTransaction(@RequestBody Transaction transaction){
 		long index = blockChain.createTransaction(transaction);
-
+		transactionRepository.save(transaction);
 		return Collections.singletonMap("message", String.format("Transaction will be added to the block {%d}", index));
 	}
 
@@ -53,6 +62,8 @@ public class BlockChainController {
 		blockChain.createTransaction(new Transaction("0", blockChainNodeId, BigDecimal.valueOf(1)));
 
 		Block block = blockChain.createBlock(new Block(proof, null));
+		
+		blockRepository.save(block);
 
 		Map<String, Object> response = new HashMap<>();
 
@@ -68,6 +79,11 @@ public class BlockChainController {
 	@RequestMapping("chain")
 	public BlockChainResponseDTO chain() {
 		return new BlockChainResponseDTO(blockChain.getChain());
+	}
+	
+	@RequestMapping("getChain")
+	public List<Block> getChain() {
+		return blockRepository.findAll();
 	}
 
 }
